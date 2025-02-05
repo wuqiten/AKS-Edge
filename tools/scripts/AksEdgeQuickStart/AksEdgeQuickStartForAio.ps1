@@ -427,6 +427,21 @@ foreach($rp in $resourceProviders)
 # Arc-enable the Kubernetes cluster
 Write-Host "Arc enable the kubernetes cluster $ClusterName" -ForegroundColor Cyan
 
+# https://github.com/Azure/azure-cli-extensions/issues/6637
+Invoke-WebRequest -Uri https://secure.globalsign.net/cacert/Root-R1.crt -OutFile c:\globalsignR1.crt
+Import-Certificate -FilePath c:\globalsignR1.crt -CertStoreLocation Cert:\LocalMachine\Root
+
+# Temporary fix https://portal.microsofticm.com/imp/v5/incidents/details/564169938/summary
+$kubectlPath = "C:\Program Files\AksEdge\kubectl\kubectl.exe"
+
+if (Test-Path $kubectlPath) {
+    Write-Host "kubectl.exe found in $kubectlPath"
+    robocopy "C:\Program Files\AksEdge\kubectl" "$env:userprofile\.azure\kubectl-client" kubectl.exe
+} else {
+    Write-Host "Error: kubectl.exe not found in $kubectlPath" -ForegroundColor Red
+    exit -1
+}
+
 New-ConnectedCluster -clusterName $ClusterName -arcArgs $aideuserConfigJson.Azure -proxyArgs $aksedgeConfigJson.Network.Proxy -useK8s:$UseK8s
 
 # Enable custom location support on your cluster using az connectedk8s enable-features command
